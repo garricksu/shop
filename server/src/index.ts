@@ -1,11 +1,12 @@
 import 'reflect-metadata'
-import { ApolloServer} from 'apollo-server-express'
-import express from 'express'
+import { ApolloServer } from 'apollo-server'
 import path from 'path'
 import { createConnection } from 'typeorm'
 import { buildSchema } from 'type-graphql'
 import { Product } from './entities/Product'
 import { ProductResolver } from './resolvers/product'
+import { MyContext } from './types'
+import { ApolloServerPluginLandingPageGraphQLPlayground } from 'apollo-server-core'
 
 const main = async () => {
   await createConnection({
@@ -19,22 +20,19 @@ const main = async () => {
     synchronize: true,
   })
 
-  const app = express()
-
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
       resolvers: [ProductResolver],
-      validate: false,
     }),
+    context: ({ req, res }): MyContext => ({ req, res }),
+    cors: {
+      origin: 'http://localhost:3000',
+      credentials: true,
+    },
+    plugins: [ApolloServerPluginLandingPageGraphQLPlayground()],
   })
 
-  await apolloServer.start()
-
-  apolloServer.applyMiddleware({
-    app,
-  })
-
-  app.listen(4000, () => {
+  apolloServer.listen(4000, () => {
     console.log('server started on localhost:4000')
   })
 }
